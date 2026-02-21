@@ -1,5 +1,5 @@
-#ifndef LORA_MODULE_H_ESP
-#define LORA_MODULE_H_ESP
+#ifndef LORA_MODULE_H
+#define LORA_MODULE_H
 
 #include <Arduino.h>
 #include <HardwareSerial.h>
@@ -17,8 +17,7 @@ public:
     
 private:
     // ESP32-only: always use Serial1 for the LoRa UART
-    // use a reference so we can access methods with dot notation
-    HardwareSerial &loraSerial = Serial1;
+    HardwareSerial* loraSerial = &Serial1;
     uint8_t _rxPin;
     uint8_t _txPin;
     uint8_t _address;
