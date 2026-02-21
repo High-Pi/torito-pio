@@ -2,14 +2,13 @@
 #include "lora_config_esp.h"
 
 LoRaModule::LoRaModule(uint8_t rxPin, uint8_t txPin, uint8_t address) 
-    : _rxPin(rxPin), _txPin(txPin), _address(address) {
+    : loraSerial(Serial1), _rxPin(rxPin), _txPin(txPin), _address(address) {
     // ESP32: use Serial1 instance; pins will be configured in begin()
-    loraSerial = &Serial1;
 }
 
 bool LoRaModule::begin() {
     // Configure Serial1 for the LoRa UART using the pins supplied to the constructor
-    loraSerial->begin(115200, SERIAL_8N1, _rxPin, _txPin);
+    loraSerial.begin(115200, SERIAL_8N1, _rxPin, _txPin);
     delay(1000);
     Serial.println("Initializing LoRa Module...");
 
@@ -56,19 +55,19 @@ bool LoRaModule::configure(uint8_t address, unsigned long band, uint8_t networkI
 
 String LoRaModule::sendATCommand(const char* command, unsigned long timeout) {
     String result = "";
-    while (loraSerial->available()) {
-        loraSerial->read();
+    while (loraSerial.available()) {
+        loraSerial.read();
     }
 
     // record the AT command so any later "+ERR=" lines can be correlated
     _lastATCommand = String(command);
-    loraSerial->println(command);
+    loraSerial.println(command);
 
     unsigned long startTime = millis();
     unsigned long lastCharTime = millis();
     while (millis() - startTime < timeout) {
-        if (loraSerial->available()) {
-            char c = loraSerial->read();
+        if (loraSerial.available()) {
+            char c = loraSerial.read();
             result += c;
             lastCharTime = millis();
             if ((result.indexOf("OK") != -1 || result.indexOf("ERROR") != -1) && 
@@ -98,7 +97,7 @@ bool LoRaModule::setParameter(uint8_t sf, uint8_t bw, uint8_t cr, uint8_t preamb
 }
 
 bool LoRaModule::receiveData(String& hexData) {
-    if (!loraSerial->available()) {
+    if (!loraSerial.available()) {
         return false;
     }
     String incomingString = "";
@@ -106,8 +105,8 @@ bool LoRaModule::receiveData(String& hexData) {
     unsigned long startTime = millis();
     unsigned long lastCharTime = millis();
     while (millis() - startTime < 1000) {
-        if (loraSerial->available()) {
-            char c = loraSerial->read();
+        if (loraSerial.available()) {
+            char c = loraSerial.read();
             if (c == '\n') break;
             incomingString += c;
             lastCharTime = millis();

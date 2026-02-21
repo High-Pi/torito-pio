@@ -24,8 +24,7 @@ bool SolenoidReceive::read(uint16_t &out_state) {
     out_state = (uint16_t(hi) << 8) | uint16_t(lo);
     cached_state = out_state;
 
-    Serial.print("SolenoidReceive: I2C read success -> 0x");
-    Serial.println(out_state, HEX);
+    // success — state cached silently
 
     return true;
 } 

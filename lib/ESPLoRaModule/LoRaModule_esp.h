@@ -17,7 +17,8 @@ public:
     
 private:
     // ESP32-only: always use Serial1 for the LoRa UART
-    HardwareSerial* loraSerial = &Serial1;
+    // use a reference so we can access methods with dot notation
+    HardwareSerial &loraSerial = Serial1;
     uint8_t _rxPin;
     uint8_t _txPin;
     uint8_t _address;
