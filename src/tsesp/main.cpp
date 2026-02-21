@@ -3,8 +3,8 @@
 
 #include <Arduino.h>
 #include <Wire.h>
-#include "lora_config_esp.h"
-#include "LoRaModule_esp.h"
+#include "lora_config.h"
+#include "LoRaModule.h"
 
 #define RX_PIN 8  // GPIO44 D7 (RX on XIAO) - connects to LoRa TX
 #define TX_PIN 7  // GPIO43 D6 (TX on XIAO) - connects to LoRa RX
@@ -19,15 +19,14 @@
 #define RELAY5 43
 #define RELAY6 44
 
-
 // Array of relay pins - using GPIO numbers that correspond to D0-D5 on XIAO
 const uint8_t relayPins[6] = {RELAY1, RELAY2, RELAY3, RELAY4, RELAY5, RELAY6};
 
 // Create LoRa module instance
-LoRaModule lora(RX_PIN, TX_PIN, LORA_RECEIVER_ADDRESS_ESP);
+LoRaModule lora(RX_PIN, TX_PIN, LORA_RECEIVER_ADDRESS);
 
 // I2C state (updated by master writes)
-volatile uint16_t lastI2CValue = RELAY_MSB_BIT_ESP; // MSB set by default so master reads are valid
+volatile uint16_t lastI2CValue = RELAY_MSB_BIT; // MSB set by default so master reads are valid
 
 // Function Prototypes
 void setRelays(uint16_t state);
@@ -50,7 +49,7 @@ void setup() {
   Serial.println(I2C_SLAVE_ADDR, HEX);
 
   // ensure local state has MSB validation bit set so masters reading this device see a valid state
-  lastI2CValue = RELAY_MSB_BIT_ESP;
+  lastI2CValue = RELAY_MSB_BIT;
   
   // Initialize relay pins as outputs
   for (uint8_t i = 0; i < 6; i++) {
@@ -62,7 +61,7 @@ void setup() {
   
   // Initialize and configure LoRa module
   if (lora.begin()) {
-    lora.configure(LORA_RECEIVER_ADDRESS_ESP, LORA_BAND_ESP, LORA_NETWORK_ID_ESP);
+    lora.configure(LORA_RECEIVER_ADDRESS, LORA_BAND, LORA_NETWORK_ID);
     Serial.println("✓ LoRa configured successfully");
   } else {
     Serial.println("✗ Failed to initialize LoRa!");
@@ -98,7 +97,7 @@ void loop() {
     lastI2CValue = receivedBytes;
 
     // Only update relays when the MSB validation bit is set
-    bool validCommand = (receivedBytes & RELAY_MSB_BIT_ESP);
+    bool validCommand = (receivedBytes & RELAY_MSB_BIT);
     if (validCommand) {
       Serial.println("Valid relay command - updating relays");
       setRelays(receivedBytes);
@@ -116,7 +115,7 @@ void loop() {
 void setRelays(uint16_t state) {
     for (uint8_t i = 0; i < 6; ++i) {
         // map relay i (0..5) to bit index 14..9 so bit14 opens relay1
-        bool on = state & (1u << (RELAY_BIT_START_ESP + 5 - i));  // check bits 14-9 for relays
+        bool on = state & (1u << (RELAY_BIT_START + 5 - i));  // check bits 14-9 for relays
         // 1 => OPEN => drive pin LOW (active-low)
         digitalWrite(relayPins[i], on ? LOW : HIGH);
         Serial.println("Setting relay " + String(i+1) + " to " + String(on ? "OPEN" : "CLOSED"));
@@ -163,7 +162,7 @@ void receiveEvent(int howMany) {
   Serial.print("I2C <- master wrote 0x");
   Serial.println(value, HEX);
 
-  if (value & RELAY_MSB_BIT_ESP) {
+  if (value & RELAY_MSB_BIT) {
     setRelays(value);
   } else {
     Serial.println("MSB not set — write ignored for relay update");
