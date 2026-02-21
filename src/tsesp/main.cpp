@@ -16,8 +16,8 @@
 #define RELAY2 2
 #define RELAY3 3
 #define RELAY4 4
-#define RELAY5 6
-#define RELAY6 7
+#define RELAY5 43
+#define RELAY6 44
 
 
 // Array of relay pins - using GPIO numbers that correspond to D0-D5 on XIAO
