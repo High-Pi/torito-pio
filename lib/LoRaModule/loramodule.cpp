@@ -109,6 +109,19 @@ String LoraModule::send_at_command(const char* command, unsigned long timeout) {
     return result;
 }
 
+
+bool LoraModule::ping(unsigned long timeout) {
+    // a simple AT query which will update _online internally
+    String resp = send_at_command("AT", timeout);
+    // treat an empty response as success (consistent with send_data_hexstr)
+    if (resp.indexOf("OK") != -1 || resp.length() == 0) {
+        // _online should have been set true by send_at_command
+        return true;
+    }
+    // otherwise keep offline
+    return false;
+}
+
 // existing API: send a hex string payload
 bool LoraModule::send_data_hexstr(uint8_t dest_address, String hex_data) {
     // If module previously proved unreachable, skip immediately to avoid long blocking

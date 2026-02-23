@@ -21,6 +21,11 @@ public:
     // Quick online status (set when AT replies contain "OK").
     bool is_online() const { return _online; }
 
+    // attempt to contact the module with a simple AT ping; returns true if
+    // a reply containing "OK" was received.  has the side‑effect of updating
+    // the _online flag just like send_at_command does.
+    bool ping(unsigned long timeout = AT_COMMAND_TIMEOUT);
+
 private:
     HardwareSerial& lora_serial = Serial5;
     uint8_t _rx_pin;

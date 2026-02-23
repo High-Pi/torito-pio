@@ -15,29 +15,55 @@ bool LoraSend::send_next() {
     if (!ring_buffer || !lora_module) return false;
 
     // Respect short backoff after a failure to avoid repeated blocking attempts
-    if (millis() < next_allowed_send_ms) return false;
+    if (millis() < next_allowed_send_ms) {
+        Serial.println("LoraSend: still in backoff");
+        return false;
+    }
 
     // Nothing to send
-    if (ring_buffer->get_count() == 0) return false;
-
-    // If module is currently not known-online, skip and set backoff
-    if (!lora_module->is_online()) {
-        Serial.println("LoraSend: module not online, skipping send");
-        next_allowed_send_ms = millis() + 5000; // 5s backoff
+    size_t count = ring_buffer->get_count();
+    if (count == 0) {
+        // no data queued
         return false;
+    }
+
+    // If module is currently not known-online, try a probe after backoff
+    if (!lora_module->is_online()) {
+        unsigned long now = millis();
+        if (now < next_allowed_send_ms) {
+            Serial.print("LoraSend: module offline, waiting until ");
+            Serial.println(next_allowed_send_ms);
+            return false;
+        }
+        // backoff expired; attempt a lightweight ping
+        Serial.println("LoraSend: probing offline module");
+        if (!lora_module->ping(200)) {
+            Serial.println("LoraSend: ping failed, extending backoff");
+            next_allowed_send_ms = now + 5000;
+            return false;
+        }
+        // ping succeeded; continue and send the queued packet
+        Serial.println("LoraSend: module responsive again");
     }
 
     // Pop one frame and attempt send
     SampleFrame frame;
     if (!ring_buffer->pop(&frame)) {
+        Serial.println("LoraSend: pop failed despite nonzero count");
         return false;
     }
 
     // serialize into a fixed-size stack buffer (headroom kept by LoraSend::MAX_SERIALIZED_HEADER)
     uint8_t buf[MAX_SERIALIZED_HEADER];
     size_t len = serialize_frame_header(frame, buf, sizeof(buf));
-    if (len == 0) return false; // serialization failure
-    Serial.println(len);
+    if (len == 0) {
+        Serial.println("LoraSend: serialization failure");
+        return false;
+    }
+
+    // log payload length (helps see if we get stuck at a particular packet size)
+    Serial.print("LoraSend: sending packet len="); Serial.println(len);
+
     // Try to send; on failure requeue and set backoff to avoid spinning
     if (lora_module->send_data_hexstr(dest_address, buf, len)) {
         // success
@@ -47,8 +73,10 @@ bool LoraSend::send_next() {
         // push frame back for retry later
         (void)ring_buffer->push(&frame);
         next_allowed_send_ms = millis() + 5000; // 5s backoff
-        Serial.print("Failed to send over lora, len=");
+        Serial.print("LoraSend: send_data_hexstr returned false, len=");
         Serial.println(len);
+        Serial.print("Queued after push, queue count=");
+        Serial.println(ring_buffer->get_count());
         Serial.print("Data: ");
         for (size_t i = 0; i < len; ++i) {
             if (buf[i] < 0x10) Serial.print('0');
