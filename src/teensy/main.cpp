@@ -43,7 +43,7 @@ void setup() {
     
     // Select mux channel for sensor initialization
     // (All sensors are on channel 7 per sensorconfig.h)
-    while (!mux_select(0, 7)) {
+    while (!mux_select(0, ADS_MUX_CHANNEL)) {
         Serial.println("ERROR: Mux channel select failed!");
         delay(1000);
     }

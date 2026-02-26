@@ -5,6 +5,7 @@
 #include <Adafruit_ADS1X15.h>
 #include <Wire.h>
 #include <SensorDesc.h>
+#include <hwconfig.h>
 
 class TemperatureSensor {
 private:

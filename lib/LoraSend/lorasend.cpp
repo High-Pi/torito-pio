@@ -16,7 +16,7 @@ bool LoraSend::send_next() {
 
     // Respect short backoff after a failure to avoid repeated blocking attempts
     if (millis() < next_allowed_send_ms) {
-        Serial.println("LoraSend: still in backoff");
+        // quietly honor backoff without spamming the serial
         return false;
     }
 
@@ -61,8 +61,13 @@ bool LoraSend::send_next() {
         return false;
     }
 
-    // log payload length (helps see if we get stuck at a particular packet size)
-    Serial.print("LoraSend: sending packet len="); Serial.println(len);
+    // print the actual bytes we are about to send (hex string)
+    Serial.print("LoraSend: data=");
+    for (size_t i = 0; i < len; ++i) {
+        if (buf[i] < 0x10) Serial.print('0');
+        Serial.print(buf[i], HEX);
+    }
+    Serial.println();
 
     // Try to send; on failure requeue and set backoff to avoid spinning
     if (lora_module->send_data_hexstr(dest_address, buf, len)) {
@@ -73,16 +78,10 @@ bool LoraSend::send_next() {
         // push frame back for retry later
         (void)ring_buffer->push(&frame);
         next_allowed_send_ms = millis() + 5000; // 5s backoff
-        Serial.print("LoraSend: send_data_hexstr returned false, len=");
-        Serial.println(len);
-        Serial.print("Queued after push, queue count=");
+        Serial.println("LoraSend: send failed, requeued");
+        // hex dump already printed above, queue count may help diagnose
+        Serial.print("Queue count=");
         Serial.println(ring_buffer->get_count());
-        Serial.print("Data: ");
-        for (size_t i = 0; i < len; ++i) {
-            if (buf[i] < 0x10) Serial.print('0');
-            Serial.print(buf[i], HEX);
-        }
-        Serial.println();
         return false;
     }
 }
