@@ -11,13 +11,10 @@ bool LoRaModule::begin() {
     // Configure Serial1 for the LoRa UART using the pins supplied to the constructor
     loraSerial->begin(115200, SERIAL_8N1, _rxPin, _txPin);
     delay(1000);
-    Serial.println("Initializing LoRa Module...");
 
     if (sendATCommand("AT").indexOf("OK") != -1) {
-        Serial.println("LoRa module responding");
         return true;
     } else {
-        Serial.println("WARNING: LoRa module not responding!");
         return false;
     }
 }
@@ -42,15 +39,10 @@ bool LoRaModule::configure(uint8_t address, unsigned long band, uint8_t networkI
 
     // Apply default radio parameters (SF, BW, CR, preamble)
     if (setParameter(LORA_PARAMETER_SF, LORA_PARAMETER_BW, LORA_PARAMETER_CR, LORA_PARAMETER_PREAMBLE)) {
-        Serial.print("LoRa parameters set: ");
-        Serial.println(LORA_PARAMETER_DEFAULT_STR);
+        // parameters set
     } else {
-        Serial.println("Warning: failed to set LoRa parameters");
+        // failed to set parameters
     }
-
-    Serial.println("LoRa configured: Address=" + String(address) + 
-                   ", Band=" + String(band) + 
-                   ", NetworkID=" + String(networkId));
     return true;
 }
 
@@ -77,8 +69,6 @@ String LoRaModule::sendATCommand(const char* command, unsigned long timeout) {
             }
         }
     }
-    Serial.print("Response: ");
-    Serial.println(result);
     return result;
 }
 
@@ -117,49 +107,8 @@ bool LoRaModule::receiveData(String& hexData) {
         }
     }
 
-    // Always expose the raw incoming line to the USB serial for debugging
     incomingString.trim();
-    if (incomingString.length() > 0) {
-        Serial.print("LoRa raw: ");
-        Serial.println(incomingString);
-    }
-
-    // If module reported an error code (e.g. "+ERR=12"), show context and hints
-    int errPos = incomingString.indexOf("+ERR=");
-    if (errPos != -1) {
-        int codeStart = errPos + 5;
-        int codeEnd = codeStart;
-        while (codeEnd < incomingString.length() && isDigit(incomingString.charAt(codeEnd))) codeEnd++;
-        int errCode = incomingString.substring(codeStart, codeEnd).toInt();
-        Serial.print("LoRa module error code: "); Serial.println(errCode);
-
-        if (_lastATCommand.length() > 0) {
-            Serial.print("Last AT command: "); Serial.println(_lastATCommand);
-
-            // Heuristic: if last command was AT+SEND, check for length/payload mismatch
-            if (_lastATCommand.startsWith("AT+SEND=")) {
-                int eq = _lastATCommand.indexOf('=');
-                String params = _lastATCommand.substring(eq + 1);
-                int c1 = params.indexOf(',');
-                int c2 = params.indexOf(',', c1 + 1);
-                if (c1 > 0 && c2 > 0) {
-                    String lenStr = params.substring(c1 + 1, c2);
-                    String dataStr = params.substring(c2 + 1);
-                    int lenParam = lenStr.toInt();
-                    int actualBytes = dataStr.length() / 2;
-                    if (lenParam != actualBytes) {
-                        Serial.print("Length mismatch in AT+SEND: specified=");
-                        Serial.print(lenParam);
-                        Serial.print(" actualBytes=");
-                        Serial.println(actualBytes);
-                        Serial.println("Hint: when sending hex payloads 'length' must be number of bytes (hexChars/2).");
-                    }
-                }
-            }
-        }
-
-        Serial.println("Hints: check payload length, destination address, network ID, module mode and antenna/power.");
-    }
+    // error handling logic removed for release
 
     // Parse format: +RCV=<address>,<length>,<data>,<RSSI>,<SNR>
     int firstComma = incomingString.indexOf(',');

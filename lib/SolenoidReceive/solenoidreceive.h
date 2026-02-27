@@ -1,7 +1,7 @@
 #ifndef SOLENOIDRECEIVE_H
 #define SOLENOIDRECEIVE_H
 
-#include <Arduino.h>
+#include <stdint.h>
 #include <Wire.h>
 
 // SolenoidReceive: read a 2-byte status payload from another MCU over I2C.

@@ -1,7 +1,7 @@
 #ifndef LORASEND_H
 #define LORASEND_H
 
-#include <Arduino.h>
+#include <stdint.h>
 #include <loramodule.h>
 #include <ringbuffer.h>
 

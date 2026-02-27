@@ -1,20 +1,28 @@
 #include "loramodule.h"
 
+// lightweight debug prints for LoRa operations
+#ifdef DEBUG
+#define LDBG(msg) Serial.print(msg)
+#define LDBGLN(msg) Serial.println(msg)
+#else
+#define LDBG(msg) (void)0
+#define LDBGLN(msg) (void)0
+#endif
+
 LoraModule::LoraModule(uint8_t address) 
     : _address(address) {}
 
 bool LoraModule::begin() {
     lora_serial.begin(LORA_BAUD);
     delay(1000);
-    Serial.println("Initializing LoRa Module...");
+    LDBGLN("LORA init");
     String result = send_at_command("AT");
-    Serial.print("Response: ");
-    Serial.println(result);
+    LDBG("R:"); LDBGLN(result);
     if (result.indexOf("OK") != -1) {
-        Serial.println("LoRa module responding");
+        LDBGLN("LORA OK");
         return true;
     } else {
-        Serial.println("WARNING: LoRa module not responding!");
+        LDBGLN("LORA NORESP");
         return false;
     }
 }
@@ -42,12 +50,10 @@ bool LoraModule::configure(uint8_t address, unsigned long band, uint8_t network_
         Serial.print("LoRa parameters set: ");
         Serial.println(LORA_PARAMETER_DEFAULT_STR);
     } else {
-        Serial.println("Warning: failed to set LoRa parameters");
+        LDBGLN("Params set fail");
     }
 
-    Serial.println("LoRa configured: Address=" + String(address) + 
-                   ", Band=" + String(band) + 
-                   ", NetworkID=" + String(network_id));
+    LDBG("LORA cfg A="); LDBG(String(address)); LDBG(" B="); LDBG(String(band)); LDBG(" N="); LDBGLN(String(network_id));
     return true;
 }
 
@@ -67,8 +73,7 @@ String LoraModule::send_at_command(const char* command, unsigned long timeout) {
     }
 
     // show exact command we are sending for debug
-    Serial.print("AT>>> ");
-    Serial.println(command);
+    LDBG("AT>"); LDBGLN(command);
 
     lora_serial.println(command);
     unsigned long start_time = millis();
@@ -96,16 +101,14 @@ String LoraModule::send_at_command(const char* command, unsigned long timeout) {
     // do not flip _online on empty response; a timeout alone shouldn't
     // permanently mark the module offline, it may simply be busy.
     if (_online != old_online) {
-        Serial.print("Module online status changed: ");
-        Serial.println(_online ? "ONLINE" : "OFFLINE");
+        LDBG("OL:"); LDBGLN(_online ? "ON" : "OFF");
     }
 
     if (result.length() == 0) {
-        Serial.println("(no response received - timeout)");
+        LDBGLN("(no resp)");
     }
 
-    Serial.print("Response: ");
-    Serial.println(result);
+    LDBG("R:"); LDBGLN(result);
     return result;
 }
 
@@ -138,7 +141,7 @@ bool LoraModule::send_data_hexstr(uint8_t dest_address, String hex_data) {
     // use short timeout to avoid long AT delays on failure
     String response = send_at_command(cmd, 200);
     if (response.indexOf("OK") != -1) {
-        Serial.println("LoRa send successful");
+        LDBGLN("LORA SEND OK");
         return true;
     }
     // Some firmware variants give no response for AT+SEND – the command is
@@ -146,15 +149,14 @@ bool LoraModule::send_data_hexstr(uint8_t dest_address, String hex_data) {
     // packet failed to transmit.  Treat an empty response as success but
     // log a warning so we can differentiate from a real error later.
     if (response.length() == 0) {
-        Serial.println("LoRa send: no response, assuming success");
+        LDBGLN("LORA SEND noresp");
         return true;
     }
     if (response.indexOf("+ERR") != -1) {
-        Serial.println("LoRa send failed, dumping debug info:");
-        Serial.print("  AT command: "); Serial.println(cmd);
-        Serial.print("  hexChars param: "); Serial.println(hexChars);
-        Serial.print("  hex length: "); Serial.println(hex_data.length());
-        Serial.print("  hex data: "); Serial.println(hex_data);
+        LDBGLN("LORA SEND ERR");
+        LDBG(" cmd="); LDBGLN(cmd);
+        LDBG(" hch="); LDBG(String(hexChars));
+        LDBG(" len="); LDBGLN(String(hex_data.length()));
     }
     return false;
 }
@@ -190,24 +192,24 @@ bool LoraModule::send_data_hexstr(uint8_t dest_address, const uint8_t* data, siz
     // If module is known-unreachable, skip to avoid waiting
     
     if (!_online) {
-        Serial.println("Module offline, skipping send");
+        LDBGLN("LORA OFFLINE skip");
         return false;
     }
     String response = send_at_command(cmd, 200);
     if (response.indexOf("OK") != -1) {
-        Serial.println("LoRa send successful");
+        LDBGLN("LORA SEND OK");
         return true;
     }
     if (response.length() == 0) {
-        Serial.println("LoRa send: no response, assuming success");
+        LDBGLN("LORA SEND noresp");
         return true;
     }
     if (response.indexOf("+ERR") != -1) {
         int actualHexChars = pos - prefix_len;
-        Serial.println("LoRa send failed, dumping debug info:");
-        Serial.print("  AT command: "); Serial.println(cmd);
-        Serial.print("  hexChars param: "); Serial.println((int)(length * 2));
-        Serial.print("  actualHexChars: "); Serial.println(actualHexChars);
+        LDBGLN("LORA SEND ERR");
+        LDBG(" cmd="); LDBGLN(cmd);
+        LDBG(" hch="); LDBG(String((int)(length*2)));
+        LDBG(" act="); LDBGLN(String(actualHexChars));
     }
     return false;
 }

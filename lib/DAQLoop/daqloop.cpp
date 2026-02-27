@@ -27,7 +27,7 @@ void daq_step() {
         if ((tick % desc.period_ticks) != 0) {
             continue;
         }
-
+        // select mux channel for sensor
         // Select MUX channel if needed (DAQ owns bus control)
         if (desc.mux_channel != NO_MUX) {
             if (!mux_select(desc.bus_id, desc.mux_channel)) {
@@ -35,7 +35,7 @@ void daq_step() {
                 continue;
             }
         }
-
+        // reading sensor
         // Read sensor (sensor just reads I2C, doesn't touch MUX)
         int32_t processed_value;
         int16_t raw_adc;
@@ -50,6 +50,7 @@ void daq_step() {
 
     // DAQ controls the I2C mux selection for solenoid reads (owned bus control).
     // If the mux selection fails, mark MUX_ERR and keep the last-cached solenoid value.
+    // reading solenoids via SolenoidReceive
     {
         uint16_t cur = 0;
         if (SOLENOID_MUX_CHANNEL != 0xFF) {
@@ -69,7 +70,7 @@ void daq_step() {
             frame.solenoid_state = solenoid_receive.get_cached_state();
         }
     }
-
+    
     // Push to DAQ buffer (every frame)
     if (!daq_buffer.push(&frame)) {
         frame.status_bits |= OVERRUN;

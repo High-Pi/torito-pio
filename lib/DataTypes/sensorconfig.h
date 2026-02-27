@@ -8,7 +8,7 @@
 
 // Enable printing of pressure data to Serial from `main` (0 = off, 1 = on)
 #ifndef ENABLE_PRESSURE_SERIAL
-#define ENABLE_PRESSURE_SERIAL 0
+#define ENABLE_PRESSURE_SERIAL 1
 #endif
 
 // Sensor table - configure your hardware here

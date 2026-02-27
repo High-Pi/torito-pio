@@ -5,10 +5,8 @@ bool SDWrite::init(RingBuffer* buffer, const char *fname) {
     if (fname) filename = fname;
 
     if (!SD.begin(BUILTIN_SDCARD)) {
-        Serial.println("SD card initialization failed!");
         return false;
     }
-    Serial.println("SD card initialized.");
 
     // append a session marker so analysis can split sessions later
     File f = SD.open(filename, FILE_WRITE);
@@ -17,7 +15,7 @@ bool SDWrite::init(RingBuffer* buffer, const char *fname) {
         f.write(reinterpret_cast<const uint8_t*>(&marker), sizeof(marker));
         f.close();
     } else {
-        Serial.println("SDWrite: warning — could not write session marker");
+        // warning: could not write session marker
     }
 
     // buffer starts empty
@@ -30,7 +28,6 @@ bool SDWrite::flush_buffer() {
 
     File dataFile = SD.open(filename, FILE_WRITE);
     if (!dataFile) {
-        Serial.println("SDWrite: failed to open file for write");
         return false;
     }
 
@@ -38,7 +35,6 @@ bool SDWrite::flush_buffer() {
     dataFile.close();
 
     if (written != write_buffer_index) {
-        Serial.println("SDWrite: write incomplete");
         // reset index to avoid re-writing corrupted/partial contents
         write_buffer_index = 0;
         return false;
@@ -50,7 +46,6 @@ bool SDWrite::flush_buffer() {
 
 bool SDWrite::data() {
     if (!sd_buffer) {
-        Serial.println("SDWrite: sd_buffer not attached");
         return false;
     }
 
@@ -58,7 +53,6 @@ bool SDWrite::data() {
     while (sd_buffer->pop(&frame)) {
         const size_t fsize = sizeof(frame);
         if (fsize > WRITE_BUFFER_SIZE) {
-            Serial.println("SDWrite: single frame larger than WRITE_BUFFER_SIZE");
             return false;
         }
 

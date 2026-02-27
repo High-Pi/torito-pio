@@ -11,9 +11,6 @@ bool SolenoidReceive::read(uint16_t &out_state) {
     if (i2c_address_ == 0) return false;
     
     if (!Wire.requestFrom((int)i2c_address_, (int)2, (int)true)) {
-        Serial.print("SolenoidReceive: I2C read failed for addr=0x");
-        if (i2c_address_ < 16) Serial.print("0");
-        Serial.println(i2c_address_, HEX);
         return false;
     }
 

@@ -52,27 +52,11 @@ void setup() {
 
   delay(1000);
 
-  Serial.println("Initializing LoRa's...");
-
+  // initialize LoRa modules silently
   String res1 = sendATcommand("AT", 100, RXLORA);
   String res2 = sendATcommand("AT", 100, TXLORA);
 
-  Serial.println(res1);
-  Serial.println("---");
-  Serial.println(res2);
-  
-  // Verify module is responding
-  if (res1.indexOf("OK") != -1) {
-    Serial.println("LoRa 1 module responding");
-  } else {
-    Serial.println("WARNING: LoRa 1 module not responding!");
-  }
-
-  if (res2.indexOf("OK") != -1) {
-    Serial.println("LoRa 2 module responding");
-  } else {
-    Serial.println("WARNING: LoRa 2 module not responding!");
-  }
+  // responses not logged
 
   // Configure this module as receiver (address 3)
   sendATcommand("AT+ADDRESS=4", 100, RXLORA);
@@ -88,16 +72,7 @@ void setup() {
   sendATcommand("AT+PARAMETER=11,9,4,24", 100, TXLORA);
   delay(100);
 
-  Serial.println("Setup complete. Listening for messages...");
-  Serial.println("This module is Address 3");
-
-
-  // Join I2C bus as slave with address 0x08
-  /* Wire.begin(I2C_DEV_ADDR); 
-  Wire.onRequest(onRequest); */
-
-  Serial.println("Setup complete. Format: <command>,<address> or <command>,<address>:repeat");
-  Serial.println("Example: Hello,7:repeat");
+  // setup complete
 }
 
 /* void loop() {
@@ -130,19 +105,9 @@ void loop() {
     }
     
     if (incomingString.length() > 0) {
-      Serial.println("========================================");
-      Serial.print("RAW: ");
-      Serial.println(incomingString);
-      
-      // Parse the received data
-      // Expected format: +RCV=<address>,<length>,<data>,<RSSI>,<SNR>
-      // Example: +RCV=1,5,Hello,-50,10
       if (incomingString.indexOf("+RCV=") != -1) {
         parseReceivedMessage(incomingString);
-      } else {
-        Serial.println("Unknown format");
       }
-      Serial.println("========================================\n");
     }
   }
   delay(10);
@@ -150,9 +115,31 @@ void loop() {
   checkUserInput();
   
   // Send message if we have input and address
+  //  - when reporting_lock is *not* set we behave normally (one send per command)
+  //  - when reporting_lock is set we toggle between two hex codes once per second
+  static unsigned long lastRepeatMillis = 0;
+  static bool flipState = false; // false -> 0x8000, true -> 0xFE00
+
   if (lora_input != "" && address != "") {
-    send_command(lora_input, address, TXLORA);
-    
+    bool doSend = true;
+
+    if (reporting_lock) {
+      // generate a new value once per second
+      if (millis() - lastRepeatMillis >= 1000) {
+        lastRepeatMillis = millis();
+        flipState = !flipState;
+        // override the user-supplied payload with our hexcodes
+        lora_input = flipState ? "fe00" : "8000";
+        doSend = true;
+      } else {
+        doSend = false;
+      }
+    }
+
+    if (doSend) {
+      send_command(lora_input, address, TXLORA);
+    }
+
     // Clear after sending unless in repeat mode
     if (!reporting_lock) {
       lora_input = "";

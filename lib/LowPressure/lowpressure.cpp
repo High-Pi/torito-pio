@@ -16,7 +16,6 @@ bool LowPressureSensor::init() {
 
 bool LowPressureSensor::read(const SensorDesc &sensor, int32_t &data, int16_t &raw_adc) {
     raw_adc = ads.readADC_SingleEnded(sensor.adc_channel);
-    
     float voltage = ads.computeVolts(raw_adc);
     float psi = (voltage - V_MIN) * (PSI_MAX / (V_MAX - V_MIN));
     if (psi < 0.0f) psi = 0.0f;

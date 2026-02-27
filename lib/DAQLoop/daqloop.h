@@ -6,7 +6,7 @@
 #include <sensordispatcher.h>
 #include <muxdriver.h>
 #include <sensorconfig.h>
-#include <Arduino.h>
+#include <cstdint>
 #include <solenoidreceive.h>
 #include <hwconfig.h>
 

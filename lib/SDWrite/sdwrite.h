@@ -1,7 +1,6 @@
 #ifndef SDWRITE_H
 #define SDWRITE_H
 
-#include <Arduino.h>
 #include <SD.h>
 #include <ringbuffer.h>
 #include <cstring>

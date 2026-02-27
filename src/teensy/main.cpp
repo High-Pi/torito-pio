@@ -88,6 +88,7 @@ void setup() {
 
 void loop() {
     static uint32_t next_daq = 0;
+    static uint32_t last_loop_time = 0;
     
     // Run DAQ at 20Hz (50ms)
     if (millis() >= next_daq) {
@@ -120,18 +121,24 @@ void loop() {
         }
         // --- end serial read ---
 #endif
-
-        next_daq += 50;
+        // schedule next DAQ step (value in milliseconds)
+        next_daq += 20;
     }
     if (!dispatcher_thread_step()) {
         Serial.println("ERROR: Dispatcher thread step failed! Overflow detetcted!");
     }
 
     // Drive SD writer (drains `sd_buffer` and writes in blocks).
-    // NOTE: `sd_buffer` is now owned/consumed by the SD writer —
-    // don't pop it elsewhere (use a debug buffer or peek API for prints).
     sdwriter.data();
 
     // Attempt to send one pending LoRa frame each loop (if available)
     lora_sender.send_next();
+
+    // report time between consecutive loop exits
+    {
+        uint32_t now = millis();
+        uint32_t dt = now - last_loop_time;
+        Serial.print("loop dt="); Serial.println(dt);
+        last_loop_time = now;
+    }
 }

@@ -39,7 +39,6 @@ void setup() {
   delay(2000);  // Wait for serial to initialize
   
   Serial.println("STARTING RECEIVER...");
-  Serial.flush();
   
   // Start I2C (Wire) as slave
   Wire.begin(I2C_SLAVE_ADDR);
@@ -57,8 +56,6 @@ void setup() {
     digitalWrite(relayPins[i], HIGH);  // Start with no power (solenoids closed)
   }
   
-  Serial.println("=== LoRa Relay Receiver ===");
-  
   // Initialize and configure LoRa module
   if (lora.begin()) {
     lora.configure(LORA_RECEIVER_ADDRESS, LORA_BAND, LORA_NETWORK_ID);
@@ -66,8 +63,6 @@ void setup() {
   } else {
     Serial.println("✗ Failed to initialize LoRa!");
   }
-  
-  Serial.println("Listening for relay commands...");
 }
 
 void loop() {
@@ -75,34 +70,17 @@ void loop() {
   
   // Use LoRa module to receive data
   if (lora.receiveData(hexData)) {
-    Serial.print("Received hex data: ");
-    Serial.println(hexData);
-    
-    // Parse hex string into uint16_t
     uint16_t receivedBytes;
     if (!parseHexToUint16(hexData, receivedBytes)) {
-      Serial.println("✗ Failed to parse hex string");
       delay(50);
       return;
     }
-    Serial.print("Binary: ");
-    Serial.println(String(receivedBytes, BIN));
 
-    // If this exact pattern was received, it's the "open all valves" command
-    if (receivedBytes == OPEN_ALL_VALVES) {
-      Serial.println("Command: OPEN ALL VALVES (0xFE00 / 1111111000000000)");
-    }
-
-    // update local I2C state so an I2C master can read the latest value
     lastI2CValue = receivedBytes;
 
-    // Only update relays when the MSB validation bit is set
     bool validCommand = (receivedBytes & RELAY_MSB_BIT);
     if (validCommand) {
-      Serial.println("Valid relay command - updating relays");
       setRelays(receivedBytes);
-    } else {
-      Serial.println("MSB not set — relays will NOT be updated");
     }
   }
   
@@ -118,7 +96,6 @@ void setRelays(uint16_t state) {
         bool on = state & (1u << (RELAY_BIT_START + 5 - i));  // check bits 14-9 for relays
         // 1 => OPEN => drive pin LOW (active-low)
         digitalWrite(relayPins[i], on ? LOW : HIGH);
-        Serial.println("Setting relay " + String(i+1) + " to " + String(on ? "OPEN" : "CLOSED"));
     }
 }
 
@@ -135,21 +112,11 @@ bool parseHexToUint16(const String &hex, uint16_t &out) {
 
 // I2C receive handler — called when an I2C master writes to this device
 void receiveEvent(int howMany) {
-  // Expect exactly 2 bytes; anything else is unexpected and will be logged/drained.
+  // Expect exactly 2 bytes; anything else is unexpected and will be drained.
   if (howMany != 2) {
-    Serial.print("I2C receiveEvent: unexpected write length ");
-    Serial.print(howMany);
-    Serial.print(" bytes — draining (hex):");
-
-    // drain & print all available bytes in hex
     while (Wire.available()) {
-      int b = Wire.read();
-      if (b < 0) break;
-      Serial.print(' ');
-      if ((uint8_t)b < 16) Serial.print('0');
-      Serial.print((uint8_t)b, HEX);
+      Wire.read();
     }
-    Serial.println();
     return;               // ignore the entire write
   }
 
@@ -159,13 +126,8 @@ void receiveEvent(int howMany) {
   uint16_t value = (uint16_t(high) << 8) | low;
 
   lastI2CValue = value;
-  Serial.print("I2C <- master wrote 0x");
-  Serial.println(value, HEX);
-
   if (value & RELAY_MSB_BIT) {
     setRelays(value);
-  } else {
-    Serial.println("MSB not set — write ignored for relay update");
   }
 }
 
