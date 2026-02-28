@@ -1,5 +1,5 @@
-#ifndef LORA_MODULE_H
-#define LORA_MODULE_H
+#ifndef LORA_MODULE_H_ESP
+#define LORA_MODULE_H_ESP
 
 #include <Arduino.h>
 #include <HardwareSerial.h>
