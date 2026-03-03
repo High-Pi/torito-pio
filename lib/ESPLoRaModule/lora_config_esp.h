@@ -1,5 +1,5 @@
-#ifndef LORA_CONFIG_H
-#define LORA_CONFIG_H
+#ifndef LORA_CONFIG_H_ESP
+#define LORA_CONFIG_H_ESP
 
 // LoRa Module Baud Configuration
 #define LORA_BAUD 115200

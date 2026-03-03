@@ -55,21 +55,26 @@ void setup() {
   // initialize LoRa modules silently
   String res1 = sendATcommand("AT", 100, RXLORA);
   String res2 = sendATcommand("AT", 100, TXLORA);
+  // Serial.print("1");
 
   // responses not logged
 
   // Configure this module as receiver (address 3)
   sendATcommand("AT+ADDRESS=4", 100, RXLORA);
   sendATcommand("AT+ADDRESS=1", 100, TXLORA);
+  // Serial.print("2");
   delay(100);
   sendATcommand("AT+BAND=915000000", 100, RXLORA);
   sendATcommand("AT+BAND=928000000", 100, TXLORA);
+  // Serial.print("3");
   delay(100);
   sendATcommand("AT+NETWORKID=18", 100, RXLORA);
   sendATcommand("AT+NETWORKID=18", 100, TXLORA);
+  // Serial.print("4");
   delay(100);
   sendATcommand("AT+PARAMETER=11,9,4,24", 100, RXLORA);
   sendATcommand("AT+PARAMETER=11,9,4,24", 100, TXLORA);
+  // Serial.print("5");
   delay(100);
 
   // setup complete
@@ -164,7 +169,7 @@ void parseReceivedMessage(String rawMessage) {
   int fourthComma = data.indexOf(',', thirdComma + 1);
   
   if (firstComma == -1 || secondComma == -1) {
-    Serial.println("Parse error");
+    // Serial.println("Parse error");
     return;
   }
   
@@ -188,19 +193,21 @@ void parseReceivedMessage(String rawMessage) {
     message = data.substring(secondComma + 1);
   }
   
-  // Display parsed data
-  Serial.print("From Address: ");
-  Serial.println(senderAddr);
-  Serial.print("Length: ");
-  Serial.println(length);
-  Serial.print("Message: ");
-  Serial.println(message);
-  Serial.print("RSSI: ");
-  Serial.print(rssi);
-  Serial.println(" dBm");
-  Serial.print("SNR: ");
-  Serial.println(snr);
-  // sendConfirmation(senderAddr);
+  // Convert hex string payload to raw bytes
+  int byteLen = message.length() / 2;
+  if (byteLen <= 0) return;
+
+  uint8_t buffer[64];   // plenty of space (your packets are 20 bytes)
+
+  for (int i = 0; i < byteLen; i++) {
+    String byteString = message.substring(i * 2, i * 2 + 2);
+    buffer[i] = (uint8_t) strtol(byteString.c_str(), NULL, 16);
+  }
+
+  // Send raw binary directly to PC over USB
+  Serial.write(0xAA);
+  Serial.write(0x55);
+  Serial.write(buffer, byteLen);
 }
 
 /* void sendConfirmation(String targetAddr) {
@@ -216,6 +223,7 @@ void parseReceivedMessage(String rawMessage) {
 
   sendATcommand(atCommand, 1000, RXLORA);
 } */
+
 
 void checkUserInput() {
   if (Serial.available() > 0) {
@@ -259,16 +267,16 @@ void send_command(String inputString, String address, HardwareSerial &name) {
   int addressInt = address.toInt();
   
   if (addressInt < 0 || addressInt > 65535) {
-    Serial.println("ERROR: Invalid address");
+    // Serial.println("ERROR: Invalid address");
     return;
   }
   
-  Serial.print("Preparing to send: '");
-  Serial.print(inputString);
-  Serial.print("' (length: ");
-  Serial.print(len);
-  Serial.print(") to address ");
-  Serial.println(addressInt);
+  // Serial.print("Preparing to send: '");
+  // Serial.print(inputString);
+  // Serial.print("' (length: ");
+  // Serial.print(len);
+  // Serial.print(") to address ");
+  // Serial.println(addressInt);
   
   // Build the AT command
   // Format: AT+SEND=<address>,<length>,<data>
@@ -277,8 +285,8 @@ void send_command(String inputString, String address, HardwareSerial &name) {
   snprintf(atCommand, sizeof(atCommand), "AT+SEND=%d,%d,%s", 
            addressInt, len, inputString.c_str());
   
-  Serial.print("AT Command: ");
-  Serial.println(atCommand);
+  // Serial.print("AT Command: ");
+  // Serial.println(atCommand);
   
   sendStartTime = millis();
   waitingForReply = true;
@@ -286,16 +294,16 @@ void send_command(String inputString, String address, HardwareSerial &name) {
   
   // Check if send was successful
   if (response.indexOf("OK") != -1) {
-    Serial.println("✓ Send successful");
+    // Serial.println("✓ Send successful");
 
   } else if (response.indexOf("+ERR") != -1) {
-    Serial.println("✗ Send failed - Error response");
+    // Serial.println("✗ Send failed - Error response");
     if (!reporting_lock) {  
       lora_input = "";
       address = "";
     }
   } else {
-    Serial.println("? Unknown response");
+    // Serial.println("? Unknown response");
   }
   
   delay(100);  // Small delay between sends
@@ -310,10 +318,10 @@ void parseAndSendToJetson(String rcvData){
 
   String payload = rcvData.substring(secondComma + 1, thirdComma);
   
-  Serial.print("Payload detected: ");
-  Serial.println(payload);
+  // Serial.print("Payload detected: ");
+  // Serial.println(payload);
   toJetson = payload.c_str();
-  Serial.print(toJetson);
+  // Serial.print(toJetson);
 }
 
 // AT Command Sender
@@ -325,6 +333,6 @@ String sendATcommand(const char *toSend, unsigned long ms, HardwareSerial &name)
   while (millis() - start < ms) {
     if (name.available()) res += (char)name.read();
   }
-  Serial.println(res);
+  // Serial.println(res);
   return res;
 }

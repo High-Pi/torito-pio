@@ -3,8 +3,8 @@
 
 #include <Arduino.h>
 #include <Wire.h>
-#include "lora_config.h"
-#include "LoRaModule.h"
+#include "lora_config_esp.h"
+#include "LoRaModule_esp.h"
 
 #define RX_PIN 8  // GPIO44 D7 (RX on XIAO) - connects to LoRa TX
 #define TX_PIN 7  // GPIO43 D6 (TX on XIAO) - connects to LoRa RX
@@ -16,8 +16,8 @@
 #define RELAY2 2
 #define RELAY3 3
 #define RELAY4 4
-#define RELAY5 43
-#define RELAY6 44
+#define RELAY5 44
+#define RELAY6 43
 
 // Array of relay pins - using GPIO numbers that correspond to D0-D5 on XIAO
 const uint8_t relayPins[6] = {RELAY1, RELAY2, RELAY3, RELAY4, RELAY5, RELAY6};

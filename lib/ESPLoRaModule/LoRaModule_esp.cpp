@@ -1,5 +1,5 @@
-#include "LoRaModule.h"
-#include "lora_config.h"
+#include "LoRaModule_esp.h"
+#include "lora_config_esp.h"
 
 LoRaModule::LoRaModule(uint8_t rxPin, uint8_t txPin, uint8_t address) 
     : _rxPin(rxPin), _txPin(txPin), _address(address) {
