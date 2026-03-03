@@ -12,5 +12,6 @@
 // (0..7). Set to 0xFF if attached to the main bus.
 #define SOLENOID_MUX_CHANNEL 7
 #define ADS_MUX_CHANNEL 4
+#define NO_MUX 0xFF
 
 #endif // HWCONFIG_H

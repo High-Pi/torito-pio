@@ -10,7 +10,7 @@ bool RingBuffer::push(const SampleFrame *frame) {
         return false;
     }
     frames[head] = *frame;
-    head = (head + 1) % RING_BUFFER_SIZE;
+    head = (head + 1) & (RING_BUFFER_SIZE - 1);
     count++;
     return true;
 }
@@ -20,7 +20,7 @@ bool RingBuffer::pop(SampleFrame *frame) {
         return false;
     }
     *frame = frames[tail];
-    tail = (tail + 1) % RING_BUFFER_SIZE;
+    tail = (tail + 1) & (RING_BUFFER_SIZE - 1);
     count--;
     return true;
 }

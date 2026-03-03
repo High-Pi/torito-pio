@@ -4,6 +4,7 @@
 #include <SensorDesc.h>
 #include <lowpressure.h>
 #include <highpressure.h>
+#include <temperature.h>
 #include <cstdint>
 
 bool sensor_dispatcher_init();
