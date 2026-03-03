@@ -6,3 +6,5 @@ DAQ loop fails upon entering many relay commands reportedly.
 
 Add in watchdog to restart teensy if it hangs for a while, reinitializing it.
 Add in timeouts every time code interacts with a serial communication bus. Have timeout reinitialize the specific bus if it hangs for too long.
+
+Study multithreading and prepare for RTOS integration.
