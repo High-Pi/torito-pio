@@ -4,7 +4,7 @@
 
 #include <SampleFrame.h>
 
-#define RING_BUFFER_SIZE 255
+#define RING_BUFFER_SIZE 256
 
 class RingBuffer {
 private:
