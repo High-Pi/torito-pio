@@ -65,8 +65,8 @@ const SensorDesc sensor_table[SENSOR_COUNT] = {
         .sensorType = SensorDesc::type::LOADCELL,
         .bus_id = 0,
         .mux_channel = NO_MUX,
-        .i2c_address = 0,           // not used for load cell
-        .adc_channel = 0,           // not used for load cell
+        .i2c_address = ADS1115_I2C_ADDR,
+        .adc_channel = 0,           // ADS1115 input A0 for load cell
         .period_ticks = 1
     }
 };

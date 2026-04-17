@@ -2,23 +2,22 @@
 #define LOAD_CELL_H
 
 #include <Arduino.h>
-#include <HX711.h>
+#include <Adafruit_ADS1X15.h>
 #include <hwconfig.h>
 #include <SensorDesc.h>
 
 class LoadCell {
 private:
-    HX711 load_cell;
-    static constexpr uint8_t default_tare_samples = 5;
-    long offset_counts = 0;
-
-    static int16_t compress_raw_counts(long net_counts);
+    static Adafruit_ADS1115 ads;
+    static long offset_counts;
+    static constexpr uint8_t kDefaultTareSamples = 5;
+    static constexpr uint8_t kDefaultAdcChannel = 0;
 
 public:
     bool init();
     bool read(const SensorDesc &sensor, int32_t &data, int16_t &raw_adc);
-    bool set_zero(uint8_t samples = default_tare_samples);
-    long get_offset_counts() const { return offset_counts; }
+    bool set_zero(uint8_t samples = kDefaultTareSamples);
+    long get_offset_counts() const;
 
 };
 

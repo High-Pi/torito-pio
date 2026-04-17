@@ -1,46 +1,32 @@
 #include "loadcell.h"
 
-int16_t LoadCell::compress_raw_counts(long net_counts) {
-    // Keep LoRa raw field compact by dropping lower 8 bits of the 24-bit HX711 value.
-    long shifted = net_counts >> 8;
-    if (shifted > 32767L) return 32767;
-    if (shifted < -32768L) return -32768;
-    return static_cast<int16_t>(shifted);
-}
-
 bool LoadCell::init() {
-    load_cell.begin(HX711_DOUT_PIN, HX711_SCK_PIN, HX711_GAIN);
-
-    if (!load_cell.wait_ready_timeout(1000, 1)) {
+    if (!ads.begin(ADS1115_I2C_ADDR)) {
         return false;
     }
 
-    load_cell.set_gain(HX711_GAIN);
-    load_cell.set_scale(1.0f);
+    ads.setGain(GAIN_TWOTHIRDS);
 
-    return set_zero(default_tare_samples);
+    return set_zero(kDefaultTareSamples);
 }
 
 bool LoadCell::set_zero(uint8_t samples) {
-    if (!load_cell.wait_ready_timeout(1000, 1)) {
-        return false;
+    const uint8_t count = (samples == 0) ? 1 : samples;
+    long sum = 0;
+
+    for (uint8_t i = 0; i < count; ++i) {
+        sum += ads.readADC_SingleEnded(kDefaultAdcChannel);
     }
 
-    load_cell.tare(samples == 0 ? 1 : samples);
-    offset_counts = load_cell.get_offset();
+    offset_counts = sum / count;
     return true;
 }
 
 bool LoadCell::read(const SensorDesc &sensor, int32_t &data, int16_t &raw_adc) {
-    (void)sensor;
+    const uint8_t channel = static_cast<uint8_t>(sensor.adc_channel & 0x03);
 
-    if (!load_cell.is_ready()) {
-        return false;
-    }
-
-    long raw_read = load_cell.read();
-    long net_counts = raw_read - load_cell.get_offset();
-    offset_counts = load_cell.get_offset();
+    raw_adc = ads.readADC_SingleEnded(channel);
+    long net_counts = static_cast<long>(raw_adc) - offset_counts;
 
     if (net_counts < 0) {
         net_counts = 0;
@@ -52,7 +38,10 @@ bool LoadCell::read(const SensorDesc &sensor, int32_t &data, int16_t &raw_adc) {
     constexpr long double force_per_step = (load_cell_rating_kg * 1000.0L) / 4295241.0L;
 
     data = static_cast<int32_t>(force_per_step * static_cast<long double>(net_counts));
-    raw_adc = compress_raw_counts(net_counts);
-    
+
     return true;
+}
+
+long LoadCell::get_offset_counts() const {
+    return offset_counts;
 }
